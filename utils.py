@@ -103,11 +103,15 @@ def get_hostname():
     except:
         return 'unknown'
 
+def get_name_from_args(args):
+    name = getattr(args, 'name', Path(args.log_dir).name if hasattr(args, 'log_dir') else 'unknown')
+    return name
+
 def print_args(parser, args, is_dict=False, flush=False):
     # args = deepcopy(args)  # NOTE
     if not is_dict and hasattr(args, 'parser'):
         delattr(args, 'parser')
-    name = getattr(args, 'name', Path(args.log_dir).name if hasattr(args, 'log_dir') else 'unknown')
+    name = get_name_from_args(args)
     datetime_now = datetime.now()
     message = f"Name: {name} Time: {datetime_now}\n"
     message += f"{os.getenv('USER')}@{get_hostname()}:\n"
@@ -174,14 +178,14 @@ def set_up_wandb_run_id(log_dir, resume=False):
             f.write(run_id + '\n')
     return run_id
 
-def set_up_wandb(args):
+def set_up_wandb(args, project=None, name=None):
     if wandb is not None:
-        name = Path(args.log_dir).name
+        name = name or get_name_from_args(args)
         resume = getattr(args, 'resume', False)
         run_id = set_up_wandb_run_id(args.log_dir, resume)
         args.wandb_run_id = run_id
         run = wandb.init(
-            project=args.wandb_project,
+            project=project or getattr(args, 'wandb_project', 'unknown'),
             name=name,
             id=run_id,
             config=args,
@@ -192,7 +196,6 @@ def set_up_wandb(args):
         log_str = "Failed to set up wandb - aborting"
         log(log_str, level="error")
         raise RuntimeError(log_str)
-
 
 # ========== checkpointing ==========
 def get_last_checkpoint(ckpt_dir, ckpt_ext='.pt', latest=None):
