@@ -12,8 +12,18 @@ import numpy as np
 import pickle
 from torchvision.io import write_video
 
-import pdb
-st = pdb.set_trace
+""" e.g.:
+    webpage = utils_html.initialize_webpage(Path(log_dir) / 'web', 'Webpage Title', resume=False, reverse=True)
+    webpage.add_header(f"step {0} ...")
+    utils_html.save_grid(
+        webpage=webpage,
+        tensor=[torch.clamp(image, 0, 1)],  # image tensor should be in range [0, 1]
+        caption=[f"caption"],
+        name=f"this_will_be_the_name_prefix_of_saved_images",
+        nrow=[1],
+        width=768,
+    )
+"""
 
 class HTML:
     """This HTML class allows us to save images and write texts into a single HTML file.
@@ -228,19 +238,6 @@ def save_grid(webpage=None, tensor=None, caption=None, name='', nrow=1, width=25
 
     webpage.save()
 
-
-""" e.g.:
-    webpage = utils_html.initialize_webpage(Path(log_dir) / 'web', 'Webpage Title', resume=False, reverse=True)
-    webpage.add_header(f"step {0} ...")
-    utils_html.save_grid(
-        webpage=webpage,
-        tensor=[torch.clamp(image, 0, 1)],  # image tensor should be in range [0, 1]
-        caption=[f"caption"],
-        name=f"this_will_be_the_name_prefix_of_saved_images",
-        nrow=[1],
-        width=768,
-    )
-"""
 
 if __name__ == '__main__':  # we show an example usage here.
     html = HTML('web/', 'test_html')

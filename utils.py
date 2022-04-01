@@ -96,6 +96,28 @@ def str2list(attr_bins):
 logging helper functions assume args.log_dir is set
 """
 # ========== logging ==========
+class logging_file(object):
+    def __init__(self, path, mode='a+', time_stamp=True, **kwargs):
+        self.path = path
+        self.mode = mode
+        if time_stamp:
+            # self.path = self.path + '_' + time.strftime('%Y%m%d_%H%M%S')
+            # self.write(f'{time.strftime("%Y%m%d_%H%M%S")}\n')
+            self.write(f'{datetime.now()}\n')
+    
+    def write(self, line_to_print):
+        with open(self.path, self.mode) as f:
+            f.write(line_to_print)
+
+    def flush(self):
+        pass
+
+    def close(self):
+        pass
+
+    def __del__(self):
+        pass
+
 def get_hostname():
     try:
         import socket
@@ -178,24 +200,45 @@ def set_up_wandb_run_id(log_dir, resume=False):
             f.write(run_id + '\n')
     return run_id
 
-def set_up_wandb(args, project=None, name=None):
+def set_up_wandb(args, project=None, name=None, save_to_log_dir=False):
     if wandb is not None:
         name = name or get_name_from_args(args)
         resume = getattr(args, 'resume', False)
         run_id = set_up_wandb_run_id(args.log_dir, resume)
         args.wandb_run_id = run_id
+        if save_to_log_dir:
+            wandb_log_dir = Path(args.log_dir) / 'wandb'
+            os.makedirs(wandb_log_dir, exist_ok=True)
+        else:
+            wandb_log_dir = None
         run = wandb.init(
             project=project or getattr(args, 'wandb_project', 'unknown'),
             name=name,
             id=run_id,
             config=args,
             resume=True if resume else "allow",
+            save_code=True,
+            dir=wandb_log_dir,
         )
         return run
     else:
         log_str = "Failed to set up wandb - aborting"
         log(log_str, level="error")
         raise RuntimeError(log_str)
+
+""" backup the code:
+parser.add_argument('--code_to_save', type=str, default='train.py,model.py')
+for filename in args.code_to_save.split(','):
+    shutil.copy(filename, os.path.join(args.log_dir, 'src', filename+'.txt'))
+run.log_code(".")  # wandb.run.log_code(".")
+# from https://docs.wandb.ai/ref/python/run
+run.log_code("../", include_fn=lambda path: path.endswith(".py") or path.endswith(".ipynb"))
+"""
+
+""" wandb.log
+# https://docs.wandb.ai/ref/python/log
+# Use `step` to sync up the step number, which also prevents duplicated logging when resuming from a previous checkpoint.
+"""
 
 # ========== checkpointing ==========
 def get_last_checkpoint(ckpt_dir, ckpt_ext='.pt', latest=None):
@@ -220,6 +263,7 @@ def requires_grad(model, flag=True):
         for p in model.parameters():
             p.requires_grad = flag
 
+
 # ========== Tensor and Numpy ==========
 def randperm(n, ordered=False):
     if ordered:  # NOTE: whether to include ordered permutation
@@ -237,3 +281,18 @@ def permute_dim(tensor, i=0, j=1, ordered=False):
     device = tensor.device
     n = tensor.shape[i]
     return torch.cat([torch.index_select(t, i, randperm(n, ordered).to(device)) for t in tensor.split(1, j)], j)
+
+
+# ========== Misc ==========
+""" Set cuda visible device:
+parser.add_argument('--cuda', default=None, type=str, help='cuda visible devices')
+if args.cuda is not None:
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
+"""
+
+""" Remove empty items from a list:
+list_ = [1, 2, 3, None, 4, 5, None]
+list_ = [x for x in list_ if x]
+# or
+list_ = list(filter(None, list_))
+"""
