@@ -80,16 +80,16 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-def str2list(attr_bins):
-    assert (isinstance(attr_bins, str))
-    attr_bins = attr_bins.strip()
-    if attr_bins.endswith(('.npy', '.npz')):
-        attr_bins = np.load(attr_bins)
+def str2list(s, sep=','):
+    assert isinstance(s, str)
+    s = s.strip()
+    if s.endswith(('.npy', '.npz')):
+        s = np.load(s)
+    elif s.startswith('[') and s.endswith(']'):
+        s = ast.literal_eval(s)
     else:
-        assert (attr_bins.startswith('[') and attr_bins.endswith(']'))
-        # attr_bins = np.array(ast.literal_eval(attr_bins))
-        attr_bins = ast.literal_eval(attr_bins)
-    return attr_bins
+        s = list(filter(None, s.split(sep)))
+    return s
 
 
 """
@@ -186,7 +186,7 @@ def log(output, flush=True):
     if flush:
         print(output)
 
-def set_up_wandb_run_id(log_dir, resume=False):
+def setup_wandb_run_id(log_dir, resume=False):
     # NOTE: if resume, use the existing wandb run id, otherwise create a new one
     os.makedirs(log_dir, exist_ok=True)
     file_path = Path(log_dir) / 'wandb_run_id.txt'
@@ -200,11 +200,11 @@ def set_up_wandb_run_id(log_dir, resume=False):
             f.write(run_id + '\n')
     return run_id
 
-def set_up_wandb(args, project=None, name=None, save_to_log_dir=False):
+def setup_wandb(args, project=None, name=None, save_to_log_dir=False):
     if wandb is not None:
         name = name or get_name_from_args(args)
         resume = getattr(args, 'resume', False)
-        run_id = set_up_wandb_run_id(args.log_dir, resume)
+        run_id = setup_wandb_run_id(args.log_dir, resume)
         args.wandb_run_id = run_id
         if save_to_log_dir:
             wandb_log_dir = Path(args.log_dir) / 'wandb'
