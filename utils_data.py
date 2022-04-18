@@ -13,9 +13,11 @@ class BatchwiseTransform:
         self.transform = transform
 
     def __call__(self, x):
-        # x: [B, C, H, W]
-        y = [self.transform(i) for i in x]
-        return torch.stack(y, dim=0)
+        # x: [B, ...]
+        return torch.stack([self.transform(i) for i in x])
+    
+    def __repr__(self):
+        return f'BatchwiseTransform({self.transform})'
 
 
 # ========== data sampler ==========
