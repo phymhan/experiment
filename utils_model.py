@@ -42,12 +42,13 @@ accumulate(ema, module, 0 if args.no_ema else accum)
 
 
 # ========== Helper Module ==========
-class Identity(nn.Module):
-    def __init__(self, *args, **kwargs):
-        super(Identity, self).__init__()
+# NOTE: We can use nn.Identity now.
+# class Identity(nn.Module):
+#     def __init__(self, *args, **kwargs):
+#         super(Identity, self).__init__()
 
-    def forward(self, input):
-        return input
+#     def forward(self, input):
+#         return input
 
 class Reshape(nn.Module):
     def __init__(self, *args, **kwargs):

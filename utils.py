@@ -9,9 +9,8 @@ import numpy as np
 import ast
 import argparse
 import torch
-
-import pdb
-st = pdb.set_trace
+import re
+from copy import deepcopy
 
 
 """
@@ -129,8 +128,8 @@ def get_name_from_args(args):
     name = getattr(args, 'name', Path(args.log_dir).name if hasattr(args, 'log_dir') else 'unknown')
     return name
 
-def print_args(parser, args, is_dict=False, flush=False):
-    # args = deepcopy(args)  # NOTE
+def print_args(parser, args, is_dict=False, flush=False, backup_file_list=[]):
+    args = deepcopy(args)  # NOTE
     if not is_dict and hasattr(args, 'parser'):
         delattr(args, 'parser')
     name = get_name_from_args(args)
@@ -161,17 +160,27 @@ def print_args(parser, args, is_dict=False, flush=False):
         f.write('\n\n')
 
     # save command to disk
+    sys_argv = deepcopy(sys.argv)
+    command = [sys_argv[0]]
+    for arg in sys_argv[1:]:
+        command.append(f'"{arg}"' if ' ' in arg else arg)
+
     file_name = log_dir / 'cmd.txt'
     with open(file_name, 'a+') as f:
         f.write(f'Time: {datetime_now}\n')
         if os.getenv('CUDA_VISIBLE_DEVICES'):
             f.write('CUDA_VISIBLE_DEVICES=%s ' % os.getenv('CUDA_VISIBLE_DEVICES'))
         f.write('deepspeed ' if getattr(args, 'deepspeed', False) else 'python3 ')
-        f.write(' '.join(sys.argv))
+        f.write(' '.join(command))
         f.write('\n\n')
 
-    # backup train code
+    # backup source code
     shutil.copyfile(sys.argv[0], log_dir / 'src' / f'{os.path.basename(sys.argv[0])}.txt')
+    if isinstance(backup_file_list, str):
+        backup_file_list = re.split(",|:|;", backup_file_list)
+    for filepath in backup_file_list:
+        filename = Path(filepath).name
+        shutil.copy(filepath, os.path.join(log_dir, 'src', filename+'.txt'))
 
 
 # ========== wandb ==========
